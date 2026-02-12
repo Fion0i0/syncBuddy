@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Calendar } from './components/Calendar';
 import { AIAssistant } from './components/AIAssistant';
@@ -9,6 +9,13 @@ import { User, ScheduleEvent } from './types';
 import { DEFAULT_USERS, INITIAL_HOLIDAY_EVENTS, VIP_MEMBERS } from './constants';
 import { generateMultiYearBirthdayEvents } from './utils/birthdayUtils';
 import { Coffee } from 'lucide-react';
+import { isFirebaseAvailable } from './services/firebase';
+import {
+  subscribeToEvents,
+  addEvent,
+  updateEvents,
+  removeEvents,
+} from './services/firebaseEventService';
 
 const App: React.FC = () => {
   const [users] = useState<User[]>(() => {
@@ -26,6 +33,7 @@ const App: React.FC = () => {
       return DEFAULT_USERS;
     }
   });
+
   const [events, setEvents] = useState<ScheduleEvent[]>(() => {
     try {
       const savedEvents = localStorage.getItem('syncbuddy_events');
@@ -41,67 +49,142 @@ const App: React.FC = () => {
       return INITIAL_HOLIDAY_EVENTS;
     }
   });
+
   const [activeUserId, setActiveUserId] = useState<string>(DEFAULT_USERS[0].id);
+  const [firebaseConnected, setFirebaseConnected] = useState(false);
+  const seededRef = useRef(false);
 
   // Generate birthday events for VIP members
   const birthdayEvents = useMemo(() => generateMultiYearBirthdayEvents(VIP_MEMBERS), []);
 
   // Combine user events with birthday events
   const allEvents = useMemo(() => {
-    // Filter out any old birthday events that user might have created manually
     const userEvents = events.filter(e => !e.id.startsWith('birthday-'));
     return [...userEvents, ...birthdayEvents];
   }, [events, birthdayEvents]);
 
-  // Save to LocalStorage
+  // Firebase real-time subscription
   useEffect(() => {
-    localStorage.setItem('syncbuddy_events', JSON.stringify(events));
-  }, [events]);
+    if (!isFirebaseAvailable()) return;
+
+    const unsubscribe = subscribeToEvents(
+      (firebaseEvents) => {
+        // One-time migration: seed Firebase from localStorage if empty
+        if (firebaseEvents.length === 0 && !seededRef.current) {
+          seededRef.current = true;
+          const savedEvents = localStorage.getItem('syncbuddy_events');
+          if (savedEvents) {
+            try {
+              const localEvents: ScheduleEvent[] = JSON.parse(savedEvents);
+              const nonBirthdayEvents = localEvents.filter(e => !e.id.startsWith('birthday-'));
+              if (nonBirthdayEvents.length > 0) {
+                Promise.all(nonBirthdayEvents.map(e => addEvent(e))).catch(console.error);
+                return;
+              }
+            } catch { /* ignore */ }
+          }
+        }
+
+        setEvents(firebaseEvents);
+        setFirebaseConnected(true);
+        localStorage.setItem('syncbuddy_events', JSON.stringify(firebaseEvents));
+      },
+      (error) => {
+        console.error('Firebase subscription error, falling back to localStorage:', error);
+        setFirebaseConnected(false);
+      }
+    );
+
+    return unsubscribe;
+  }, []);
+
+  // Save to localStorage (only when Firebase is not connected)
+  useEffect(() => {
+    if (!firebaseConnected) {
+      localStorage.setItem('syncbuddy_events', JSON.stringify(events));
+    }
+  }, [events, firebaseConnected]);
 
   const handleAddEvent = (event: ScheduleEvent) => {
-    setEvents(prev => [...prev, event]);
+    if (firebaseConnected) {
+      addEvent(event).catch((err) => {
+        console.error('Firebase addEvent failed, applying locally:', err);
+        setEvents(prev => [...prev, event]);
+      });
+    } else {
+      setEvents(prev => [...prev, event]);
+    }
   };
 
   const handleUpdateEvent = (id: string, title: string, description?: string) => {
-    setEvents(prev => {
-      const targetEvent = prev.find(e => e.id === id);
-      if (!targetEvent) return prev;
+    if (firebaseConnected) {
+      const targetEvent = events.find(e => e.id === id);
+      if (!targetEvent) return;
 
-      // Check if this is a group event (has 👨‍👩‍👧‍👦 in title)
       const isGroupEvent = targetEvent.title.includes('👨‍👩‍👧‍👦');
 
       if (isGroupEvent) {
-        // Update all events with the same original title and date (group events)
-        return prev.map(e =>
-          (e.date === targetEvent.date && e.title === targetEvent.title)
-            ? { ...e, title, description }
-            : e
-        );
+        const updateMap: Record<string, Partial<ScheduleEvent>> = {};
+        events.forEach(e => {
+          if (e.date === targetEvent.date && e.title === targetEvent.title) {
+            updateMap[e.id] = { title, description };
+          }
+        });
+        updateEvents(updateMap).catch(console.error);
       } else {
-        // Update only the single event
-        return prev.map(e => e.id === id ? { ...e, title, description } : e);
+        updateEvents({ [id]: { title, description } }).catch(console.error);
       }
-    });
+    } else {
+      setEvents(prev => {
+        const targetEvent = prev.find(e => e.id === id);
+        if (!targetEvent) return prev;
+
+        const isGroupEvent = targetEvent.title.includes('👨‍👩‍👧‍👦');
+
+        if (isGroupEvent) {
+          return prev.map(e =>
+            (e.date === targetEvent.date && e.title === targetEvent.title)
+              ? { ...e, title, description }
+              : e
+          );
+        } else {
+          return prev.map(e => e.id === id ? { ...e, title, description } : e);
+        }
+      });
+    }
   };
 
   const handleRemoveEvent = (id: string) => {
-    setEvents(prev => {
-      const targetEvent = prev.find(e => e.id === id);
-      if (!targetEvent) return prev;
+    if (firebaseConnected) {
+      const targetEvent = events.find(e => e.id === id);
+      if (!targetEvent) return;
 
-      // Check if this is a group event (has 👨‍👩‍👧‍👦 in title)
       const isGroupEvent = targetEvent.title.includes('👨‍👩‍👧‍👦');
 
       if (isGroupEvent) {
-        // Remove all events with the same title and date (entire group event)
-        return prev.filter(e =>
-          !(e.date === targetEvent.date && e.title === targetEvent.title)
-        );
+        const idsToRemove = events
+          .filter(e => e.date === targetEvent.date && e.title === targetEvent.title)
+          .map(e => e.id);
+        removeEvents(idsToRemove).catch(console.error);
       } else {
-        // Remove only the single event
-        return prev.filter(e => e.id !== id);
+        removeEvents([id]).catch(console.error);
       }
-    });
+    } else {
+      setEvents(prev => {
+        const targetEvent = prev.find(e => e.id === id);
+        if (!targetEvent) return prev;
+
+        const isGroupEvent = targetEvent.title.includes('👨‍👩‍👧‍👦');
+
+        if (isGroupEvent) {
+          return prev.filter(e =>
+            !(e.date === targetEvent.date && e.title === targetEvent.title)
+          );
+        } else {
+          return prev.filter(e => e.id !== id);
+        }
+      });
+    }
   };
 
   const activeUser = VIP_MEMBERS.find(u => u.id === activeUserId);
