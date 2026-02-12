@@ -32,7 +32,7 @@ export const generateBirthdayEvents = (users: User[], year: number): ScheduleEve
         id: `birthday-${user.id}-${year}`,
         userId: user.id,
         date: dateStr,
-        title: `${user.name}${ageText} B-day`,
+        title: `${user.name}`,
         description: user.birthYear ? `Born ${user.birthYear}` : 'Birthday',
         status: 'busy'
       });

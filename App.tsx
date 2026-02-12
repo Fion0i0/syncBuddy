@@ -8,6 +8,7 @@ import { MobileAIButton } from './components/MobileAIButton';
 import { User, ScheduleEvent } from './types';
 import { DEFAULT_USERS, INITIAL_HOLIDAY_EVENTS, VIP_MEMBERS } from './constants';
 import { generateMultiYearBirthdayEvents } from './utils/birthdayUtils';
+import { Coffee } from 'lucide-react';
 
 const App: React.FC = () => {
   const [users] = useState<User[]>(() => {
@@ -117,9 +118,15 @@ const App: React.FC = () => {
       </div>
 
       {/* Mobile Header with User Selector */}
-      <div className="md:hidden bg-white border-b border-slate-200 shadow-sm">
+      <div className="md:hidden glass-card border-b border-slate-200 shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">
-          <h1 className="text-lg font-extrabold text-slate-800">SquadSync</h1>
+          <div className="flex items-center gap-2">
+            <Coffee className="w-5 h-5 text-slate-700" />
+            <div>
+              <h1 className="text-lg font-extrabold text-slate-800 tracking-tight">得間飲茶</h1>
+              <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">漢奸撚們</p>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-500">as</span>
             <div className="flex items-center gap-1.5 px-2 py-1 rounded-full" style={{ backgroundColor: activeUser?.color }}>

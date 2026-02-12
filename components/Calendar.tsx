@@ -160,18 +160,12 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
           }`}
         >
           <div className="flex justify-between items-start mb-0.5 md:mb-1 px-0.5 md:px-1 pointer-events-none">
-            <span className={`text-[10px] md:text-[11px] font-extrabold ${isToday ? 'bg-indigo-600 text-white w-4 h-4 md:w-5 md:h-5 flex items-center justify-center rounded-full' : 'text-slate-400'}`}>
+            <span className={`text-[11px] font-extrabold ${isToday ? 'bg-indigo-600 text-white w-5 h-5 flex items-center justify-center rounded-full' : 'text-slate-400'}`}>
               {d}
             </span>
             {renderedEvents.length > 0 && (
-              <span className="hidden md:inline text-[8px] font-black text-slate-300 uppercase tracking-tighter">
+              <span className="text-[8px] font-black text-slate-300 uppercase tracking-tighter">
                 {renderedEvents.length} Record{renderedEvents.length !== 1 ? 's' : ''}
-              </span>
-            )}
-            {/* Mobile: show count as number only */}
-            {renderedEvents.length > 0 && (
-              <span className="md:hidden text-[8px] font-black text-slate-300">
-                {renderedEvents.length}
               </span>
             )}
           </div>
@@ -198,7 +192,7 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
                   <div
                     key={event.id}
                     onClick={(e) => handleEventClick(event, dateStr, e)}
-                    className="w-full px-1 py-0.5 rounded text-[9px] md:text-[10px] font-semibold cursor-pointer hover:brightness-95 transition-all"
+                    className="w-full px-1 py-0.5 rounded text-[10px] font-semibold cursor-pointer hover:brightness-95 transition-all"
                     style={{
                       backgroundColor: user?.color ? `${user.color}40` : '#fce7f3',
                       borderWidth: '1px',
@@ -219,14 +213,14 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
                   className={`relative inline-block group/event cursor-pointer`}
                 >
                   {isGroup ? (
-                    <div className="w-6 h-6 md:w-10 md:h-10 bg-slate-800 rounded-full flex items-center justify-center shadow-sm ring-1 ring-slate-900">
-                      <Users className="w-3 h-3 md:w-5 md:h-5 text-white" />
+                    <div className="w-9 h-9 md:w-10 md:h-10 bg-slate-800 rounded-full flex items-center justify-center shadow-sm ring-1 ring-slate-900">
+                      <Users className="w-4 h-4 md:w-5 md:h-5 text-white" />
                     </div>
                   ) : (
                     <img
                       src={user?.icon}
                       alt={user?.name}
-                      className="w-6 h-6 md:w-10 md:h-10 rounded-full object-cover shadow-sm"
+                      className="w-9 h-9 md:w-10 md:h-10 rounded-full object-cover shadow-sm"
                       style={isOwner ? { boxShadow: `0 0 0 2px ${user?.color}` } : undefined}
                     />
                   )}
@@ -242,7 +236,7 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
             })}
           </div>
 
-          <div className="hidden md:block absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+          <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
             <div className="rounded-full p-1 shadow-lg" style={{ backgroundColor: activeUser.color }}>
               <PlusCircle className="w-3 h-3 text-white" />
             </div>
@@ -261,12 +255,12 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
       <div className="flex-1 flex flex-col bg-white overflow-hidden shadow-lg md:shadow-2xl rounded-xl md:rounded-3xl m-2 md:m-4 border border-slate-100">
         <div className="p-3 md:p-6 border-b bg-slate-50/50 flex items-center justify-between">
           <div className="flex items-center gap-2 md:gap-3">
-            <div className="hidden md:block p-2 bg-slate-700 rounded-lg text-white">
+            <div className="p-2 bg-slate-700 rounded-lg text-white">
               <CalendarIcon className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-base md:text-lg font-bold text-slate-800">{monthName} {year}</h2>
-              <p className="hidden md:block text-xs text-slate-500">Shared Activity Timeline</p>
+              <p className="text-[10px] md:text-xs text-slate-500">Shared Activity Timeline</p>
             </div>
           </div>
 
@@ -286,10 +280,8 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
         <div className="grid grid-cols-7 bg-slate-50/30 border-b border-slate-100">
           {SHORT_DAYS.map((day) => (
             <div key={day} className="py-1.5 md:py-2 text-center">
-              <span className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-wider md:tracking-widest">
-                {/* Show single letter on mobile, full short name on desktop */}
-                <span className="md:hidden">{day[0]}</span>
-                <span className="hidden md:inline">{day}</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                {day}
               </span>
             </div>
           ))}
@@ -302,7 +294,7 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
         </div>
 
         {/* Footer legend - hidden on mobile */}
-        <div className="hidden md:flex p-4 bg-white border-t border-slate-100 justify-center gap-6">
+        <div className="flex p-3 md:p-4 bg-white border-t border-slate-100 justify-center gap-4 md:gap-6">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-slate-100 border border-slate-200"></div>
             <span className="text-[10px] font-semibold text-slate-400 uppercase">Open Date</span>
