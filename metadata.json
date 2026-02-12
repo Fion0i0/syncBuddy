@@ -1,0 +1,8 @@
+
+{
+  "name": "SquadSync - Collaborative Friend Scheduling",
+  "description": "A modern collaborative scheduling platform for friend groups to coordinate travel, events, and free time using personalized icons and AI-powered insights.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
