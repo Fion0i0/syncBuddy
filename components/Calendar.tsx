@@ -101,7 +101,7 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
 
       selectedUserIds.forEach(userId => {
         onAddEvent({
-          id: crypto.randomUUID(),
+          id: (crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`),
           userId,
           date: modalState.dateStr,
           title: finalTitle,
@@ -160,11 +160,11 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
           }`}
         >
           <div className="flex justify-between items-start mb-0.5 md:mb-1 px-0.5 md:px-1 pointer-events-none">
-            <span className={`text-[11px] font-extrabold ${isToday ? 'bg-indigo-600 text-white w-5 h-5 flex items-center justify-center rounded-full' : 'text-slate-400'}`}>
+            <span className={`text-[9px] md:text-[11px] font-extrabold ${isToday ? 'bg-slate-700 text-white w-4 h-4 md:w-5 md:h-5 flex items-center justify-center rounded-full' : 'text-slate-400'}`}>
               {d}
             </span>
             {renderedEvents.length > 0 && (
-              <span className="text-[8px] font-black text-slate-300 uppercase tracking-tighter">
+              <span className="text-[6px] md:text-[8px] font-black text-slate-300 uppercase tracking-tighter">
                 {renderedEvents.length} Record{renderedEvents.length !== 1 ? 's' : ''}
               </span>
             )}
@@ -192,7 +192,7 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
                   <div
                     key={event.id}
                     onClick={(e) => handleEventClick(event, dateStr, e)}
-                    className="w-full px-1 py-0.5 rounded text-[10px] font-semibold cursor-pointer hover:brightness-95 transition-all"
+                    className="w-full px-1 py-0.5 rounded text-[7px] md:text-[10px] font-semibold cursor-pointer hover:brightness-95 transition-all"
                     style={{
                       backgroundColor: user?.color ? `${user.color}40` : '#fce7f3',
                       borderWidth: '1px',
@@ -213,14 +213,14 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
                   className={`relative inline-block group/event cursor-pointer`}
                 >
                   {isGroup ? (
-                    <div className="w-9 h-9 md:w-10 md:h-10 bg-slate-800 rounded-full flex items-center justify-center shadow-sm ring-1 ring-slate-900">
-                      <Users className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                    <div className="w-6 h-6 md:w-10 md:h-10 bg-slate-800 rounded-full flex items-center justify-center shadow-sm ring-1 ring-slate-900">
+                      <Users className="w-3 h-3 md:w-5 md:h-5 text-white" />
                     </div>
                   ) : (
                     <img
                       src={user?.icon}
                       alt={user?.name}
-                      className="w-9 h-9 md:w-10 md:h-10 rounded-full object-cover shadow-sm"
+                      className="w-6 h-6 md:w-10 md:h-10 rounded-full object-cover shadow-sm"
                       style={isOwner ? { boxShadow: `0 0 0 2px ${user?.color}` } : undefined}
                     />
                   )}

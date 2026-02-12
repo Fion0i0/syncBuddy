@@ -6,7 +6,7 @@ export const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Fr
 export const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export const VIP_MEMBERS: User[] = [
-  { id: 'u1', name: 'Fion', icon: '/VIP/Fion.png', color: '#86efac', birthday: '11-22', birthYear: 1993 },
+  { id: 'u1', name: 'Fion', icon: '/VIP/Fion.png', color: '#a5f7c3', birthday: '11-22', birthYear: 1993 },
   { id: 'u2', name: 'Sally', icon: '/VIP/Sally.png', color: '#dbcd37', birthday: '08-30', birthYear: 1995 },
   { id: 'u3', name: 'Eun', icon: '/VIP/Eun.png', color: '#7393b3', birthday: '03-05', birthYear: 1994 },
   { id: 'u4', name: 'Kaka', icon: '/VIP/Kaka.png', color: '#ffd2d2', birthday: '02-05', birthYear: 1996 },

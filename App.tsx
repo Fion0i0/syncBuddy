@@ -60,7 +60,7 @@ const App: React.FC = () => {
   // Combine user events with birthday events
   const allEvents = useMemo(() => {
     const userEvents = events.filter(e => !e.id.startsWith('birthday-'));
-    return [...userEvents, ...birthdayEvents];
+    return [...birthdayEvents, ...userEvents];
   }, [events, birthdayEvents]);
 
   // Firebase real-time subscription
@@ -130,9 +130,13 @@ const App: React.FC = () => {
             updateMap[e.id] = { title, description };
           }
         });
-        updateEvents(updateMap).catch(console.error);
+        updateEvents(updateMap).catch((err) => {
+          console.error('Firebase updateEvents failed:', err);
+        });
       } else {
-        updateEvents({ [id]: { title, description } }).catch(console.error);
+        updateEvents({ [id]: { title, description } }).catch((err) => {
+          console.error('Firebase updateEvents failed:', err);
+        });
       }
     } else {
       setEvents(prev => {
@@ -165,9 +169,13 @@ const App: React.FC = () => {
         const idsToRemove = events
           .filter(e => e.date === targetEvent.date && e.title === targetEvent.title)
           .map(e => e.id);
-        removeEvents(idsToRemove).catch(console.error);
+        removeEvents(idsToRemove).catch((err) => {
+          console.error('Firebase removeEvents failed:', err);
+        });
       } else {
-        removeEvents([id]).catch(console.error);
+        removeEvents([id]).catch((err) => {
+          console.error('Firebase removeEvents failed:', err);
+        });
       }
     } else {
       setEvents(prev => {
