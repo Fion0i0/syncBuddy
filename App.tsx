@@ -116,25 +116,27 @@ const App: React.FC = () => {
     }
   };
 
-  const handleUpdateEvent = (id: string, title: string, description?: string) => {
+  const handleUpdateEvent = (id: string, title: string, description?: string, newDate?: string) => {
     if (firebaseConnected) {
       const targetEvent = events.find(e => e.id === id);
       if (!targetEvent) return;
 
       const isGroupEvent = targetEvent.title.includes('👨‍👩‍👧‍👦');
+      const updates: Partial<ScheduleEvent> = { title, description };
+      if (newDate) updates.date = newDate;
 
       if (isGroupEvent) {
         const updateMap: Record<string, Partial<ScheduleEvent>> = {};
         events.forEach(e => {
           if (e.date === targetEvent.date && e.title === targetEvent.title) {
-            updateMap[e.id] = { title, description };
+            updateMap[e.id] = updates;
           }
         });
         updateEvents(updateMap).catch((err) => {
           console.error('Firebase updateEvents failed:', err);
         });
       } else {
-        updateEvents({ [id]: { title, description } }).catch((err) => {
+        updateEvents({ [id]: updates }).catch((err) => {
           console.error('Firebase updateEvents failed:', err);
         });
       }
@@ -144,15 +146,17 @@ const App: React.FC = () => {
         if (!targetEvent) return prev;
 
         const isGroupEvent = targetEvent.title.includes('👨‍👩‍👧‍👦');
+        const updates: Partial<ScheduleEvent> = { title, description };
+        if (newDate) updates.date = newDate;
 
         if (isGroupEvent) {
           return prev.map(e =>
             (e.date === targetEvent.date && e.title === targetEvent.title)
-              ? { ...e, title, description }
+              ? { ...e, ...updates }
               : e
           );
         } else {
-          return prev.map(e => e.id === id ? { ...e, title, description } : e);
+          return prev.map(e => e.id === id ? { ...e, ...updates } : e);
         }
       });
     }

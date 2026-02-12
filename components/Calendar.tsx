@@ -11,7 +11,7 @@ interface CalendarProps {
   activeUserId: string;
   onAddEvent: (event: ScheduleEvent) => void;
   onRemoveEvent: (id: string) => void;
-  onUpdateEvent: (id: string, title: string, description?: string) => void;
+  onUpdateEvent: (id: string, title: string, description?: string, newDate?: string) => void;
   onSelectUser: (userId: string) => void;
 }
 
@@ -92,9 +92,9 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
     }
   };
 
-  const handleSaveEvent = (title: string, description: string, selectedUserIds: string[]) => {
+  const handleSaveEvent = (title: string, description: string, selectedUserIds: string[], newDate?: string) => {
     if (modalState.eventId) {
-      onUpdateEvent(modalState.eventId, title, description);
+      onUpdateEvent(modalState.eventId, title, description, newDate);
     } else {
       const isGroup = selectedUserIds.length > 1;
       const finalTitle = isGroup && !title.includes('👨‍👩‍👧‍👦') ? `👨‍👩‍👧‍👦 ${title}` : title;

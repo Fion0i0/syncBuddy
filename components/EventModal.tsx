@@ -2,12 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { User, ScheduleEvent } from '../types';
 import { EVENT_SUGGESTIONS, VIP_MEMBERS } from '../constants';
-import { X, Trash2, CheckCircle2, Users, FileText, Check, Plus, Minus, CalendarPlus2 } from 'lucide-react';
+import { X, Trash2, CheckCircle2, Users, FileText, Check, Plus, Minus, CalendarPlus2, CalendarDays } from 'lucide-react';
 
 interface EventModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (title: string, description: string, selectedUserIds: string[]) => void;
+  onSave: (title: string, description: string, selectedUserIds: string[], newDate?: string) => void;
   onDelete?: () => void;
   activeUser: User;
   initialTitle?: string;
@@ -19,6 +19,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   isOpen, onClose, onSave, onDelete, activeUser, initialTitle = '', initialDescription = '', dateStr
 }) => {
   const [title, setTitle] = useState(initialTitle);
+  const [eventDate, setEventDate] = useState(dateStr);
   const [scheduleRows, setScheduleRows] = useState<{ time: string; event: string }[]>([
     { time: '', event: '' }
   ]);
@@ -28,6 +29,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setTitle(initialTitle);
+      setEventDate(dateStr);
       setSelectedUserIds([activeUser.id]);
 
       // Parse existing description for time|event rows
@@ -96,11 +98,12 @@ export const EventModal: React.FC<EventModalProps> = ({
 
   if (!isOpen) return null;
 
-  const formattedDate = new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
+  const formattedDate = new Date(eventDate + 'T00:00:00').toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
     day: 'numeric'
   });
+  const isEditing = !!initialTitle;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
@@ -134,6 +137,21 @@ export const EventModal: React.FC<EventModalProps> = ({
               className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-700 text-sm md:text-base"
             />
           </div>
+
+          {isEditing && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5">
+                <CalendarDays className="w-3 h-3 text-slate-400" />
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date</label>
+              </div>
+              <input
+                type="date"
+                value={eventDate}
+                onChange={(e) => setEventDate(e.target.value)}
+                className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-700 text-sm md:text-base"
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -270,7 +288,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               </button>
             )}
             <button
-              onClick={() => onSave(title || 'Busy', getFullDescription(), selectedUserIds)}
+              onClick={() => onSave(title || 'Busy', getFullDescription(), selectedUserIds, eventDate !== dateStr ? eventDate : undefined)}
               disabled={selectedUserIds.length === 0}
               className="flex items-center justify-center gap-1.5 md:gap-2 px-3 md:px-4 py-2.5 md:py-3 rounded-xl text-white font-bold transition-all shadow-lg flex-[2] hover:brightness-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
               style={{ backgroundColor: activeUser.color }}
