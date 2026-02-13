@@ -7,19 +7,22 @@ import { X, Trash2, CheckCircle2, Users, FileText, Check, Plus, Minus, CalendarP
 interface EventModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (title: string, description: string, selectedUserIds: string[], newDate?: string) => void;
+  onSave: (title: string, description: string, selectedUserIds: string[], newStartDate?: string, newEndDate?: string) => void;
   onDelete?: () => void;
   activeUser: User;
   initialTitle?: string;
   initialDescription?: string;
+  initialEndDate?: string;
+  initialParticipantIds?: string[];
   dateStr: string;
 }
 
 export const EventModal: React.FC<EventModalProps> = ({
-  isOpen, onClose, onSave, onDelete, activeUser, initialTitle = '', initialDescription = '', dateStr
+  isOpen, onClose, onSave, onDelete, activeUser, initialTitle = '', initialDescription = '', initialEndDate = '', initialParticipantIds, dateStr
 }) => {
   const [title, setTitle] = useState(initialTitle);
-  const [eventDate, setEventDate] = useState(dateStr);
+  const [startDate, setStartDate] = useState(dateStr);
+  const [endDate, setEndDate] = useState(initialEndDate);
   const [scheduleRows, setScheduleRows] = useState<{ time: string; event: string }[]>([
     { time: '', event: '' }
   ]);
@@ -29,8 +32,9 @@ export const EventModal: React.FC<EventModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setTitle(initialTitle);
-      setEventDate(dateStr);
-      setSelectedUserIds([activeUser.id]);
+      setStartDate(dateStr);
+      setEndDate(initialEndDate || '');
+      setSelectedUserIds(initialParticipantIds && initialParticipantIds.length > 0 ? initialParticipantIds : [activeUser.id]);
 
       // Parse existing description for time|event rows
       if (initialDescription) {
@@ -98,12 +102,11 @@ export const EventModal: React.FC<EventModalProps> = ({
 
   if (!isOpen) return null;
 
-  const formattedDate = new Date(eventDate + 'T00:00:00').toLocaleDateString('en-US', {
+  const formattedDate = new Date(startDate + 'T00:00:00').toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
     day: 'numeric'
   });
-  const isEditing = !!initialTitle;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
@@ -138,20 +141,37 @@ export const EventModal: React.FC<EventModalProps> = ({
             />
           </div>
 
-          {isEditing && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-1.5">
-                <CalendarDays className="w-3 h-3 text-slate-400" />
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date</label>
-              </div>
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5">
+              <CalendarDays className="w-3 h-3 text-slate-400" />
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date</label>
+            </div>
+            <div className="flex gap-2 items-center">
               <input
                 type="date"
-                value={eventDate}
-                onChange={(e) => setEventDate(e.target.value)}
-                className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-700 text-sm md:text-base"
+                value={startDate}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  if (endDate && e.target.value > endDate) setEndDate(e.target.value);
+                }}
+                className="flex-1 px-3 md:px-4 py-2.5 md:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-700 text-sm md:text-base"
+              />
+              <span className="text-xs font-bold text-slate-400">to</span>
+              <input
+                type="date"
+                value={endDate}
+                min={startDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                placeholder="Same day"
+                className="flex-1 px-3 md:px-4 py-2.5 md:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-700 text-sm md:text-base"
               />
             </div>
-          )}
+            {endDate && endDate !== startDate && (
+              <p className="text-[10px] text-indigo-600 font-semibold">
+                {Math.round((new Date(endDate + 'T00:00:00').getTime() - new Date(startDate + 'T00:00:00').getTime()) / 86400000) + 1} days
+              </p>
+            )}
+          </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -288,7 +308,13 @@ export const EventModal: React.FC<EventModalProps> = ({
               </button>
             )}
             <button
-              onClick={() => onSave(title || 'Busy', getFullDescription(), selectedUserIds, eventDate !== dateStr ? eventDate : undefined)}
+              onClick={() => onSave(
+                title || 'Busy',
+                getFullDescription(),
+                selectedUserIds,
+                startDate !== dateStr ? startDate : undefined,
+                endDate && endDate !== startDate ? endDate : undefined
+              )}
               disabled={selectedUserIds.length === 0}
               className="flex items-center justify-center gap-1.5 md:gap-2 px-3 md:px-4 py-2.5 md:py-3 rounded-xl text-white font-bold transition-all shadow-lg flex-[2] hover:brightness-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
               style={{ backgroundColor: activeUser.color }}

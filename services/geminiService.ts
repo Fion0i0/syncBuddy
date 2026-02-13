@@ -8,7 +8,8 @@ export const askScheduleAssistant = async (users: User[], events: ScheduleEvent[
   const scheduleContext = events.map(e => {
     const user = users.find(u => u.id === e.userId);
     const detailInfo = e.description ? ` (Notes: ${e.description})` : "";
-    return `${user?.name} (${user?.icon}) has an event: "${e.title}" on ${e.date}${detailInfo}.`;
+    const dateInfo = (e.endDate && e.endDate !== e.date) ? `from ${e.date} to ${e.endDate}` : `on ${e.date}`;
+    return `${user?.name} (${user?.icon}) has an event: "${e.title}" ${dateInfo}${detailInfo}.`;
   }).join("\n");
 
   const prompt = `

@@ -11,7 +11,7 @@ interface CalendarProps {
   activeUserId: string;
   onAddEvent: (event: ScheduleEvent) => void;
   onRemoveEvent: (id: string) => void;
-  onUpdateEvent: (id: string, title: string, description?: string, newDate?: string) => void;
+  onUpdateEvent: (id: string, title: string, description?: string, newDate?: string, newEndDate?: string, selectedUserIds?: string[]) => void;
   onSelectUser: (userId: string) => void;
 }
 
@@ -54,7 +54,7 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
     setModalState({
       isOpen: true,
       dateStr,
-      eventId: existingEventId || events.find(e => e.userId === activeUserId && e.date === dateStr && !e.id.startsWith('birthday-'))?.id
+      eventId: existingEventId
     });
   };
 
@@ -92,18 +92,20 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
     }
   };
 
-  const handleSaveEvent = (title: string, description: string, selectedUserIds: string[], newDate?: string) => {
+  const handleSaveEvent = (title: string, description: string, selectedUserIds: string[], newStartDate?: string, newEndDate?: string) => {
     if (modalState.eventId) {
-      onUpdateEvent(modalState.eventId, title, description, newDate);
+      onUpdateEvent(modalState.eventId, title, description, newStartDate, newEndDate, selectedUserIds);
     } else {
       const isGroup = selectedUserIds.length > 1;
       const finalTitle = isGroup && !title.includes('👨‍👩‍👧‍👦') ? `👨‍👩‍👧‍👦 ${title}` : title;
+      const startDate = newStartDate || modalState.dateStr;
 
       selectedUserIds.forEach(userId => {
         onAddEvent({
           id: (crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`),
           userId,
-          date: modalState.dateStr,
+          date: startDate,
+          endDate: newEndDate || undefined,
           title: finalTitle,
           description,
           status: 'busy'
@@ -120,7 +122,7 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
     setModalState({ ...modalState, isOpen: false });
   };
 
-  const getDateEvents = (dateStr: string) => events.filter(e => e.date === dateStr);
+  const getDateEvents = (dateStr: string) => events.filter(e => e.date <= dateStr && (e.endDate || e.date) >= dateStr);
   const activeUser = VIP_MEMBERS.find(u => u.id === activeUserId)!;
 
   const renderDays = () => {
@@ -206,6 +208,11 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
                 );
               }
 
+              const isMultiDay = event.endDate && event.endDate !== event.date;
+              const durationDays = isMultiDay
+                ? Math.round((new Date(event.endDate + 'T00:00:00').getTime() - new Date(event.date + 'T00:00:00').getTime()) / 86400000) + 1
+                : 0;
+
               return (
                 <div
                   key={event.id}
@@ -224,12 +231,18 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
                       style={isOwner ? { boxShadow: `0 0 0 2px ${user?.color}` } : undefined}
                     />
                   )}
+                  {/* Duration badge for multi-day events */}
+                  {isMultiDay && (
+                    <div className="absolute -top-1 -right-1 bg-indigo-600 text-white text-[6px] md:text-[8px] font-black rounded-full w-3 h-3 md:w-4 md:h-4 flex items-center justify-center z-10">
+                      {durationDays}d
+                    </div>
+                  )}
                   {/* Tooltip on hover - desktop only */}
                   <div
                     className="hidden md:block absolute left-1/2 -translate-x-1/2 bottom-full mb-1 px-2 py-1 text-white text-[10px] font-semibold rounded-md whitespace-nowrap opacity-0 group-hover/event:opacity-100 transition-opacity pointer-events-none z-10"
                     style={{ backgroundColor: isGroup ? '#1e293b' : (user?.color || '#1e293b') }}
                   >
-                    {event.title}
+                    {event.title}{isMultiDay ? ` (${durationDays}d)` : ''}
                   </div>
                 </div>
               );
@@ -249,6 +262,9 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
   };
 
   const selectedEvent = events.find(e => e.id === modalState.eventId);
+  const selectedEventParticipants = selectedEvent && selectedEvent.title.includes('👨‍👩‍👧‍👦')
+    ? events.filter(e => e.date === selectedEvent.date && e.title === selectedEvent.title).map(e => e.userId)
+    : selectedEvent ? [selectedEvent.userId] : undefined;
 
   return (
     <>
@@ -314,10 +330,12 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
 
       <EventModal
         isOpen={modalState.isOpen}
-        dateStr={modalState.dateStr}
+        dateStr={selectedEvent?.date || modalState.dateStr}
         activeUser={activeUser}
         initialTitle={selectedEvent?.title}
         initialDescription={selectedEvent?.description}
+        initialEndDate={selectedEvent?.endDate}
+        initialParticipantIds={selectedEventParticipants}
         onClose={() => setModalState({ ...modalState, isOpen: false })}
         onSave={handleSaveEvent}
         onDelete={modalState.eventId ? handleDeleteEvent : undefined}
@@ -338,16 +356,19 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
               const user = VIP_MEMBERS.find(u => u.id === event.userId);
               const isGroup = event.isGroupDisplay;
               const isBirthday = event.id.startsWith('birthday-');
-              const formattedDate = new Date(previewEvent.dateStr + 'T00:00:00').toLocaleDateString('en-US', {
+              const formattedStartDate = new Date(event.date + 'T00:00:00').toLocaleDateString('en-US', {
                 weekday: 'short',
                 month: 'short',
                 day: 'numeric'
               });
+              const formattedDate = (event.endDate && event.endDate !== event.date)
+                ? `${formattedStartDate} → ${new Date(event.endDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`
+                : formattedStartDate;
 
               // Find all participants for group events (same title on same date)
               const participants = isGroup
                 ? events
-                    .filter(e => e.date === previewEvent.dateStr && e.title === event.title)
+                    .filter(e => e.date === event.date && e.title === event.title)
                     .map(e => VIP_MEMBERS.find(m => m.id === e.userId))
                     .filter(Boolean)
                 : [];

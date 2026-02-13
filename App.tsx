@@ -116,48 +116,90 @@ const App: React.FC = () => {
     }
   };
 
-  const handleUpdateEvent = (id: string, title: string, description?: string, newDate?: string) => {
+  const handleUpdateEvent = (id: string, title: string, description?: string, newDate?: string, newEndDate?: string, selectedUserIds?: string[]) => {
+    const targetEvent = events.find(e => e.id === id);
+    if (!targetEvent) return;
+
+    const wasGroupEvent = targetEvent.title.includes('👨‍👩‍👧‍👦');
+
+    // Find all existing participant events (same date + title for group events, or just the single event)
+    const existingGroupEvents = wasGroupEvent
+      ? events.filter(e => e.date === targetEvent.date && e.title === targetEvent.title)
+      : [targetEvent];
+    const existingUserIds = existingGroupEvents.map(e => e.userId);
+
+    // Use provided selectedUserIds, or fall back to existing participants
+    const newUserIds = selectedUserIds || existingUserIds;
+    const isNowGroup = newUserIds.length > 1;
+
+    // Ensure group emoji prefix is correct
+    const baseTitle = title.replace(/^👨‍👩‍👧‍👦\s*/, '');
+    const finalTitle = isNowGroup ? `👨‍👩‍👧‍👦 ${baseTitle}` : baseTitle;
+
+    const updates: Partial<ScheduleEvent> = { title: finalTitle, description };
+    if (newDate) updates.date = newDate;
+    updates.endDate = newEndDate || '';
+
+    // Determine which participants to add, remove, keep
+    const toRemove = existingGroupEvents.filter(e => !newUserIds.includes(e.userId));
+    const toKeep = existingGroupEvents.filter(e => newUserIds.includes(e.userId));
+    const toAdd = newUserIds.filter(uid => !existingUserIds.includes(uid));
+
     if (firebaseConnected) {
-      const targetEvent = events.find(e => e.id === id);
-      if (!targetEvent) return;
-
-      const isGroupEvent = targetEvent.title.includes('👨‍👩‍👧‍👦');
-      const updates: Partial<ScheduleEvent> = { title, description };
-      if (newDate) updates.date = newDate;
-
-      if (isGroupEvent) {
+      // Update existing participants
+      if (toKeep.length > 0) {
         const updateMap: Record<string, Partial<ScheduleEvent>> = {};
-        events.forEach(e => {
-          if (e.date === targetEvent.date && e.title === targetEvent.title) {
-            updateMap[e.id] = updates;
-          }
-        });
-        updateEvents(updateMap).catch((err) => {
-          console.error('Firebase updateEvents failed:', err);
-        });
-      } else {
-        updateEvents({ [id]: updates }).catch((err) => {
-          console.error('Firebase updateEvents failed:', err);
-        });
+        toKeep.forEach(e => { updateMap[e.id] = updates; });
+        updateEvents(updateMap).catch(err => console.error('Firebase updateEvents failed:', err));
       }
+
+      // Remove dropped participants
+      if (toRemove.length > 0) {
+        removeEvents(toRemove.map(e => e.id)).catch(err => console.error('Firebase removeEvents failed:', err));
+      }
+
+      // Add new participants
+      toAdd.forEach(userId => {
+        addEvent({
+          id: (crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`),
+          userId,
+          date: newDate || targetEvent.date,
+          endDate: newEndDate || targetEvent.endDate || undefined,
+          title: finalTitle,
+          description: description || '',
+          status: 'busy'
+        }).catch(err => console.error('Firebase addEvent failed:', err));
+      });
     } else {
       setEvents(prev => {
-        const targetEvent = prev.find(e => e.id === id);
-        if (!targetEvent) return prev;
+        let result = prev;
 
-        const isGroupEvent = targetEvent.title.includes('👨‍👩‍👧‍👦');
-        const updates: Partial<ScheduleEvent> = { title, description };
-        if (newDate) updates.date = newDate;
-
-        if (isGroupEvent) {
-          return prev.map(e =>
-            (e.date === targetEvent.date && e.title === targetEvent.title)
-              ? { ...e, ...updates }
-              : e
-          );
-        } else {
-          return prev.map(e => e.id === id ? { ...e, ...updates } : e);
+        // Remove dropped participants
+        if (toRemove.length > 0) {
+          const removeIds = new Set(toRemove.map(e => e.id));
+          result = result.filter(e => !removeIds.has(e.id));
         }
+
+        // Update remaining participants
+        const keepIds = new Set(toKeep.map(e => e.id));
+        result = result.map(e =>
+          keepIds.has(e.id) ? { ...e, ...updates, endDate: newEndDate || undefined } : e
+        );
+
+        // Add new participants
+        toAdd.forEach(userId => {
+          result = [...result, {
+            id: (crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`),
+            userId,
+            date: newDate || targetEvent.date,
+            endDate: newEndDate || targetEvent.endDate || undefined,
+            title: finalTitle,
+            description: description || '',
+            status: 'busy' as const
+          }];
+        });
+
+        return result;
       });
     }
   };

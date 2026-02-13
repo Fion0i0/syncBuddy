@@ -11,7 +11,8 @@ export interface User {
 export interface ScheduleEvent {
   id: string;
   userId: string;
-  date: string; // YYYY-MM-DD format
+  date: string; // YYYY-MM-DD format (start date)
+  endDate?: string; // YYYY-MM-DD format (end date for multi-day events)
   title: string;
   description?: string; // Detailed notes (time, location, train info, etc.)
   status: 'busy' | 'available';
