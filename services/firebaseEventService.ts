@@ -29,7 +29,9 @@ export function subscribeToEvents(
       callback([]);
       return;
     }
-    const events: ScheduleEvent[] = Object.values(data);
+    const events: ScheduleEvent[] = Object.values(data).filter(
+      (e: any) => e && typeof e === 'object' && e.id && e.date && e.title
+    );
     callback(events);
   };
 

@@ -59,7 +59,7 @@ const App: React.FC = () => {
 
   // Combine user events with birthday events
   const allEvents = useMemo(() => {
-    const userEvents = events.filter(e => !e.id.startsWith('birthday-'));
+    const userEvents = events.filter(e => e.id && !e.id.startsWith('birthday-'));
     return [...birthdayEvents, ...userEvents];
   }, [events, birthdayEvents]);
 
@@ -164,7 +164,7 @@ const App: React.FC = () => {
           id: (crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`),
           userId,
           date: newDate || targetEvent.date,
-          endDate: newEndDate || targetEvent.endDate || undefined,
+          ...((newEndDate || targetEvent.endDate) ? { endDate: newEndDate || targetEvent.endDate } : {}),
           title: finalTitle,
           description: description || '',
           status: 'busy'
@@ -183,7 +183,7 @@ const App: React.FC = () => {
         // Update remaining participants
         const keepIds = new Set(toKeep.map(e => e.id));
         result = result.map(e =>
-          keepIds.has(e.id) ? { ...e, ...updates, endDate: newEndDate || undefined } : e
+          keepIds.has(e.id) ? { ...e, ...updates, ...(newEndDate ? { endDate: newEndDate } : {}) } : e
         );
 
         // Add new participants
@@ -192,7 +192,7 @@ const App: React.FC = () => {
             id: (crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`),
             userId,
             date: newDate || targetEvent.date,
-            endDate: newEndDate || targetEvent.endDate || undefined,
+            ...((newEndDate || targetEvent.endDate) ? { endDate: newEndDate || targetEvent.endDate } : {}),
             title: finalTitle,
             description: description || '',
             status: 'busy' as const
