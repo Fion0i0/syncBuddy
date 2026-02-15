@@ -166,8 +166,8 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
               {d}
             </span>
             {renderedEvents.length > 0 && (
-              <span className="text-[6px] md:text-[8px] font-black text-slate-300 uppercase tracking-tighter">
-                {renderedEvents.length} Record{renderedEvents.length !== 1 ? 's' : ''}
+              <span className="text-[5px] md:text-[7px] font-black text-slate-300 tracking-tighter">
+                {renderedEvents.length} record{renderedEvents.length !== 1 ? 's' : ''}
               </span>
             )}
           </div>
