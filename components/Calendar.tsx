@@ -11,7 +11,7 @@ interface CalendarProps {
   activeUserId: string;
   onAddEvent: (event: ScheduleEvent) => void;
   onRemoveEvent: (id: string) => void;
-  onUpdateEvent: (id: string, title: string, description?: string, newDate?: string, newEndDate?: string, selectedUserIds?: string[]) => void;
+  onUpdateEvent: (id: string, title: string, description?: string, newDate?: string, newEndDate?: string) => void;
   onSelectUser: (userId: string) => void;
 }
 
@@ -94,7 +94,7 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
 
   const handleSaveEvent = (title: string, description: string, selectedUserIds: string[], newStartDate?: string, newEndDate?: string) => {
     if (modalState.eventId) {
-      onUpdateEvent(modalState.eventId, title, description, newStartDate, newEndDate, selectedUserIds);
+      onUpdateEvent(modalState.eventId, title, description, newStartDate, newEndDate);
     } else {
       const isGroup = selectedUserIds.length > 1;
       const finalTitle = isGroup && !title.includes('👨‍👩‍👧‍👦') ? `👨‍👩‍👧‍👦 ${title}` : title;
@@ -105,7 +105,7 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
           id: (crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`),
           userId,
           date: startDate,
-          ...(newEndDate ? { endDate: newEndDate } : {}),
+          endDate: newEndDate || undefined,
           title: finalTitle,
           description,
           status: 'busy'
@@ -335,7 +335,6 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
         initialTitle={selectedEvent?.title}
         initialDescription={selectedEvent?.description}
         initialEndDate={selectedEvent?.endDate}
-        initialParticipantIds={selectedEventParticipants}
         onClose={() => setModalState({ ...modalState, isOpen: false })}
         onSave={handleSaveEvent}
         onDelete={modalState.eventId ? handleDeleteEvent : undefined}
