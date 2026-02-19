@@ -105,7 +105,7 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
           id: (crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`),
           userId,
           date: startDate,
-          endDate: newEndDate || undefined,
+          endDate: newEndDate || '',
           title: finalTitle,
           description,
           status: 'busy'
