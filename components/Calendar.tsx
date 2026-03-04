@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { SHORT_DAYS, VIP_MEMBERS } from '../constants';
+import { SHORT_DAYS, VIP_MEMBERS, TAIWAN_HOLIDAYS } from '../constants';
 import { User, ScheduleEvent } from '../types';
 import { Calendar as CalendarIcon, PlusCircle, ChevronLeft, ChevronRight, Users, X, Edit3 } from 'lucide-react';
 import { EventModal } from './EventModal';
@@ -152,21 +152,24 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
       });
 
       const isActiveUserBusy = dayEvents.some(e => e.userId === activeUserId);
+      const dayOfWeek = new Date(year, month, d).getDay();
+      const isHolidayOrWeekend = dayOfWeek === 0 || dayOfWeek === 6 || TAIWAN_HOLIDAYS.has(dateStr);
 
       dayElements.push(
         <div
           key={dateStr}
           onClick={() => handleCellClick(dateStr)}
           className={`h-20 md:h-32 p-1 md:p-1.5 border-r border-b border-slate-100 flex flex-col group cursor-pointer transition-all relative ${
-            isActiveUserBusy ? 'bg-indigo-50/10' : 'bg-white hover:bg-slate-50/50'
+            isActiveUserBusy && !isHolidayOrWeekend ? 'bg-indigo-50/10' : !isHolidayOrWeekend ? 'bg-white hover:bg-slate-50/50' : ''
           }`}
+          style={isHolidayOrWeekend ? { background: 'linear-gradient(to bottom, #FFA191 20%, transparent 10%)' } : undefined}
         >
           <div className="flex justify-between items-start mb-0.5 md:mb-1 px-0.5 md:px-1 pointer-events-none">
-            <span className={`text-[9px] md:text-[11px] font-extrabold ${isToday ? 'bg-slate-700 text-white w-4 h-4 md:w-5 md:h-5 flex items-center justify-center rounded-full' : 'text-slate-400'}`}>
+            <span className={`text-[9px] md:text-[11px] font-extrabold ${isToday ? 'today-shimmer w-4 h-4 md:w-5 md:h-5 flex items-center justify-center rounded-full' : 'text-slate-600'}`}>
               {d}
             </span>
             {renderedEvents.length > 0 && (
-              <span className="text-[5px] md:text-[7px] font-black text-slate-300 tracking-tighter">
+              <span className="text-[5px] md:text-[7px] font-black text-slate-600 tracking-tighter">
                 {renderedEvents.length} record{renderedEvents.length !== 1 ? 's' : ''}
               </span>
             )}

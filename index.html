@@ -18,6 +18,20 @@
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
+        @keyframes shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+        .today-shimmer {
+            background: linear-gradient(
+                90deg,
+                #f472b6, #a78bfa, #38bdf8, #facc15, #f472b6
+            );
+            background-size: 300% 100%;
+            animation: shimmer 2.5s linear infinite;
+            color: white;
+            font-weight: 800;
+        }
         .hide-scrollbar::-webkit-scrollbar {
             display: none;
         }
