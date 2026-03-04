@@ -22,26 +22,36 @@ export const askScheduleAssistant = async (users: User[], events: ScheduleEvent[
     User Question: "${query}"
     
     Rules:
+    - ALWAYS reply in Cantonese (廣東話). Use casual, natural Cantonese like chatting with friends.
     - Answer the question accurately based on the provided schedule.
     - If someone has an event, they are "busy". If they don't have an event on a date, they are "free".
     - Events starting with 👨‍👩‍👧‍👦 are "Group Events" where everyone is attending.
-    - Be concise, friendly, and use the friends' emojis in your response.
+    - Be concise and friendly. Use the friends' emojis in your response.
+    - Do NOT use markdown formatting (no **, no *, no bullet points). Just use plain text with line breaks.
     - If details like specific times, train numbers, or locations are provided in the (Notes: ...), use that information to answer specific questions.
-    - If you don't know the answer or the date is outside the schedule, say so gracefully.
+    - If you don't know the answer or the date is outside the schedule, say so gracefully in Cantonese.
   `;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-      config: {
-        temperature: 0.7,
-      }
-    });
+  const models = ['gemini-3-flash-preview', 'gemini-2.5-flash'];
 
-    return response.text || "I'm sorry, I couldn't process that request.";
-  } catch (error) {
-    console.error("AI Assistant Error:", error);
-    return "Sor9ry 我跌咗個腦。用唔到住";
+  for (const model of models) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: prompt,
+        config: {
+          temperature: 0.7,
+        }
+      });
+
+      return response.text || "I'm sorry, I couldn't process that request.";
+    } catch (error) {
+      console.error(`Model ${model} failed:`, error);
+      if (model === models[models.length - 1]) {
+        return "Sorry 我跌咗個腦。用唔到住";
+      }
+    }
   }
+
+  return "Sorry 我跌咗個腦。用唔到住";
 };
