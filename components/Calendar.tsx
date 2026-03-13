@@ -94,7 +94,7 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
 
   const handleSaveEvent = (title: string, description: string, selectedUserIds: string[], newStartDate?: string, newEndDate?: string) => {
     if (modalState.eventId) {
-      onUpdateEvent(modalState.eventId, title, description, newStartDate, newEndDate);
+      onUpdateEvent(modalState.eventId, title, description, newStartDate, newEndDate, selectedUserIds);
     } else {
       const isGroup = selectedUserIds.length > 1;
       const finalTitle = isGroup && !title.includes('👨‍👩‍👧‍👦') ? `👨‍👩‍👧‍👦 ${title}` : title;
@@ -338,6 +338,7 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
         initialTitle={selectedEvent?.title}
         initialDescription={selectedEvent?.description}
         initialEndDate={selectedEvent?.endDate}
+        initialParticipantIds={selectedEventParticipants}
         onClose={() => setModalState({ ...modalState, isOpen: false })}
         onSave={handleSaveEvent}
         onDelete={modalState.eventId ? handleDeleteEvent : undefined}
