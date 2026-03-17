@@ -227,15 +227,35 @@ export const EventModal: React.FC<EventModalProps> = ({
           <div className="space-y-2 md:space-y-3">
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Quick Tags</label>
             <div className="flex flex-wrap gap-1.5 md:gap-2">
-              {EVENT_SUGGESTIONS.map((s) => (
-                <button
-                  key={s.label}
-                  onClick={() => setTitle(`${s.icon} ${s.label}`)}
-                  className="px-2 md:px-3 py-1 md:py-1.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg text-[11px] md:text-xs font-bold text-slate-500 transition-all border border-transparent hover:border-indigo-100"
-                >
-                  {s.icon} {s.label}
-                </button>
-              ))}
+              {EVENT_SUGGESTIONS.map((s) => {
+                const tag = `${s.icon} ${s.label}`;
+                const isActive = title.split(' | ').some(t => t.trim() === tag);
+                return (
+                  <button
+                    key={s.label}
+                    onClick={() => {
+                      setTitle(prev => {
+                        const tags = prev.split(' | ').map(t => t.trim()).filter(Boolean);
+                        if (tags.includes(tag)) {
+                          const remaining = tags.filter(t => t !== tag);
+                          return remaining.join(' | ');
+                        }
+                        if (tags.length === 0 || (tags.length === 1 && tags[0] === '')) {
+                          return tag;
+                        }
+                        return [...tags, tag].join(' | ');
+                      });
+                    }}
+                    className={`px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-[11px] md:text-xs font-bold transition-all border ${
+                      isActive
+                        ? 'bg-indigo-100 text-indigo-700 border-indigo-300'
+                        : 'bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-500 border-transparent hover:border-indigo-100'
+                    }`}
+                  >
+                    {s.icon} {s.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

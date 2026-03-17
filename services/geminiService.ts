@@ -55,3 +55,40 @@ export const askScheduleAssistant = async (users: User[], events: ScheduleEvent[
 
   return "Sorry 我跌咗個腦。用唔到住";
 };
+
+const AVAILABLE_ICONS = [
+  'Plane', 'MapPin', 'PartyPopper', 'Dice5', 'Church', 'Utensils', 'Film',
+  'Music', 'ShoppingBag', 'Gamepad2', 'Dumbbell', 'Beer', 'Coffee', 'Tent',
+  'Mountain', 'Gift', 'Heart', 'BookOpen', 'Car', 'Train', 'Ship', 'Bike',
+  'Camera', 'Palette', 'Mic', 'Trophy', 'Flame', 'Snowflake', 'Sun',
+  'Moon', 'Star', 'Umbrella', 'Home', 'Building', 'Trees', 'Waves',
+  'Scissors', 'Stethoscope', 'GraduationCap', 'Briefcase', 'Volleyball',
+  'Pizza', 'IceCream', 'Cake', 'Baby', 'Dog', 'Cat', 'Fish', 'Bug',
+  'Sparkles', 'Zap', 'Rocket', 'Crown', 'Gem', 'Theater', 'Clapperboard',
+];
+
+export const pickEventIcon = async (title: string): Promise<string> => {
+  try {
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+
+    const cleanTitle = title.replace(/^👨‍👩‍👧‍👦\s*/, '');
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: `Pick the single best icon for a group event titled "${cleanTitle}".
+Available icons: ${AVAILABLE_ICONS.join(', ')}
+Reply with ONLY the icon name, nothing else. Just one word.`,
+      config: { temperature: 0 }
+    });
+
+    const picked = response.text?.trim() || '';
+    if (AVAILABLE_ICONS.includes(picked)) {
+      return picked;
+    }
+    return '';
+  } catch (error) {
+    console.error('Failed to pick event icon:', error);
+    return '';
+  }
+};
+

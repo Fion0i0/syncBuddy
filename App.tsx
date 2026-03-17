@@ -9,6 +9,7 @@ import { User, ScheduleEvent } from './types';
 import { DEFAULT_USERS, INITIAL_HOLIDAY_EVENTS, VIP_MEMBERS } from './constants';
 import { generateMultiYearBirthdayEvents } from './utils/birthdayUtils';
 import { Coffee } from 'lucide-react';
+import { pickEventIcon } from './services/geminiService';
 import { isFirebaseAvailable } from './services/firebase';
 import {
   subscribeToEvents,
@@ -116,7 +117,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleUpdateEvent = (id: string, title: string, description?: string, newDate?: string, newEndDate?: string, selectedUserIds?: string[]) => {
+  const handleUpdateEvent = async (id: string, title: string, description?: string, newDate?: string, newEndDate?: string, selectedUserIds?: string[]) => {
     const targetEvent = events.find(e => e.id === id);
     if (!targetEvent) return;
 
@@ -134,11 +135,25 @@ const App: React.FC = () => {
 
     // Ensure group emoji prefix is correct
     const baseTitle = title.replace(/^👨‍👩‍👧‍👦\s*/, '');
+    const existingBaseTitle = targetEvent.title.replace(/^👨‍👩‍👧‍👦\s*/, '');
     const finalTitle = isNowGroup ? `👨‍👩‍👧‍👦 ${baseTitle}` : baseTitle;
+
+    // Regenerate icon if title changed and it's a group event, otherwise preserve existing
+    let iconUrl: string | undefined | null = targetEvent.iconUrl;
+    if (isNowGroup && baseTitle !== existingBaseTitle) {
+      iconUrl = await pickEventIcon(finalTitle);
+    } else if (!isNowGroup) {
+      iconUrl = undefined;
+    }
 
     const updates: Partial<ScheduleEvent> = { title: finalTitle, description };
     if (newDate) updates.date = newDate;
     updates.endDate = newEndDate || '';
+    if (iconUrl) {
+      updates.iconUrl = iconUrl;
+    } else if (iconUrl === undefined) {
+      updates.iconUrl = '';
+    }
 
     // Determine which participants to add, remove, keep
     const toRemove = existingGroupEvents.filter(e => !newUserIds.includes(e.userId));
@@ -167,7 +182,8 @@ const App: React.FC = () => {
           ...((newEndDate || targetEvent.endDate) ? { endDate: newEndDate || targetEvent.endDate } : {}),
           title: finalTitle,
           description: description || '',
-          status: 'busy'
+          status: 'busy',
+          ...(iconUrl ? { iconUrl } : {})
         }).catch(err => console.error('Firebase addEvent failed:', err));
       });
     } else {
@@ -195,7 +211,8 @@ const App: React.FC = () => {
             ...((newEndDate || targetEvent.endDate) ? { endDate: newEndDate || targetEvent.endDate } : {}),
             title: finalTitle,
             description: description || '',
-            status: 'busy' as const
+            status: 'busy' as const,
+            ...(iconUrl ? { iconUrl } : {})
           }];
         });
 

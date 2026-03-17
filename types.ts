@@ -16,6 +16,7 @@ export interface ScheduleEvent {
   title: string;
   description?: string; // Detailed notes (time, location, train info, etc.)
   status: 'busy' | 'available';
+  iconUrl?: string; // AI-generated group event icon (base64 data URL)
 }
 
 export interface AIRecommendation {

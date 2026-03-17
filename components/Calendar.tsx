@@ -2,8 +2,18 @@
 import React, { useState } from 'react';
 import { SHORT_DAYS, VIP_MEMBERS, TAIWAN_HOLIDAYS } from '../constants';
 import { User, ScheduleEvent } from '../types';
-import { Calendar as CalendarIcon, PlusCircle, ChevronLeft, ChevronRight, Users, X, Edit3 } from 'lucide-react';
+import { Calendar as CalendarIcon, PlusCircle, ChevronLeft, ChevronRight, Users, X, Edit3, Plane, MapPin, PartyPopper, Dice5, Church, Utensils, Film, Music, ShoppingBag, Gamepad2, Dumbbell, Beer, Coffee, Tent, Mountain, Gift, Heart, BookOpen, Car, Train, Ship, Bike, Camera, Palette, Mic, Trophy, Flame, Snowflake, Sun, Moon, Star, Umbrella, Home, Building, Trees, Waves, Scissors, Stethoscope, GraduationCap, Briefcase, Volleyball, Pizza, IceCream, Cake, Baby, Dog, Cat, Fish, Bug, Sparkles, Zap, Rocket, Crown, Gem, Theater, Clapperboard, type LucideIcon } from 'lucide-react';
 import { EventModal } from './EventModal';
+import { pickEventIcon } from '../services/geminiService';
+
+const ICON_MAP: Record<string, LucideIcon> = {
+  Plane, MapPin, PartyPopper, Dice5, Church, Utensils, Film, Music, ShoppingBag,
+  Gamepad2, Dumbbell, Beer, Coffee, Tent, Mountain, Gift, Heart, BookOpen,
+  Car, Train, Ship, Bike, Camera, Palette, Mic, Trophy, Flame, Snowflake,
+  Sun, Moon, Star, Umbrella, Home, Building, Trees, Waves, Scissors,
+  Stethoscope, GraduationCap, Briefcase, Volleyball, Pizza, IceCream, Cake,
+  Baby, Dog, Cat, Fish, Bug, Sparkles, Zap, Rocket, Crown, Gem, Theater, Clapperboard,
+};
 
 interface CalendarProps {
   users: User[];
@@ -92,13 +102,15 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
     }
   };
 
-  const handleSaveEvent = (title: string, description: string, selectedUserIds: string[], newStartDate?: string, newEndDate?: string) => {
+  const handleSaveEvent = async (title: string, description: string, selectedUserIds: string[], newStartDate?: string, newEndDate?: string) => {
     if (modalState.eventId) {
       onUpdateEvent(modalState.eventId, title, description, newStartDate, newEndDate, selectedUserIds);
     } else {
       const isGroup = selectedUserIds.length > 1;
       const finalTitle = isGroup && !title.includes('👨‍👩‍👧‍👦') ? `👨‍👩‍👧‍👦 ${title}` : title;
       const startDate = newStartDate || modalState.dateStr;
+
+      const iconUrl = isGroup ? await pickEventIcon(finalTitle) : undefined;
 
       selectedUserIds.forEach(userId => {
         onAddEvent({
@@ -108,7 +120,8 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
           endDate: newEndDate || '',
           title: finalTitle,
           description,
-          status: 'busy'
+          status: 'busy',
+          ...(iconUrl ? { iconUrl } : {})
         });
       });
     }
@@ -222,11 +235,14 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
                   onClick={(e) => handleEventClick(event, dateStr, e)}
                   className={`relative inline-block group/event cursor-pointer`}
                 >
-                  {isGroup ? (
-                    <div className="w-6 h-6 md:w-10 md:h-10 bg-slate-800 rounded-full flex items-center justify-center shadow-sm ring-1 ring-slate-900">
-                      <Users className="w-3 h-3 md:w-5 md:h-5 text-white" />
-                    </div>
-                  ) : (
+                  {isGroup ? (() => {
+                    const IconComponent = (event.iconUrl && ICON_MAP[event.iconUrl]) || Users;
+                    return (
+                      <div className="w-6 h-6 md:w-10 md:h-10 bg-slate-800 rounded-full flex items-center justify-center shadow-sm ring-1 ring-slate-900">
+                        <IconComponent className="w-3 h-3 md:w-5 md:h-5 text-white" />
+                      </div>
+                    );
+                  })() : (
                     <img
                       src={user?.icon}
                       alt={user?.name}
@@ -368,10 +384,12 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
                 ? `${formattedStartDate} → ${new Date(event.endDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`
                 : formattedStartDate;
 
-              // Find all participants for group events (same title on same date)
+              // Find all participants for group events (same title on same date), deduplicated
+              const seenUserIds = new Set<string>();
               const participants = isGroup
                 ? events
                     .filter(e => e.date === event.date && e.title === event.title)
+                    .filter(e => { if (seenUserIds.has(e.userId)) return false; seenUserIds.add(e.userId); return true; })
                     .map(e => VIP_MEMBERS.find(m => m.id === e.userId))
                     .filter(Boolean)
                 : [];
@@ -379,11 +397,14 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
               return (
                 <>
                   <div className="flex items-start gap-3 mb-3">
-                    {isGroup ? (
-                      <div className="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center shadow-sm">
-                        <Users className="w-6 h-6 text-white" />
-                      </div>
-                    ) : (
+                    {isGroup ? (() => {
+                      const IconComponent = (event.iconUrl && ICON_MAP[event.iconUrl]) || Users;
+                      return (
+                        <div className="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center shadow-sm">
+                          <IconComponent className="w-6 h-6 text-white" />
+                        </div>
+                      );
+                    })() : (
                       <img
                         src={user?.icon}
                         alt={user?.name}
