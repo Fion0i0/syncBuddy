@@ -9,12 +9,12 @@ export const askScheduleAssistant = async (users: User[], events: ScheduleEvent[
     const user = users.find(u => u.id === e.userId);
     const detailInfo = e.description ? ` (Notes: ${e.description})` : "";
     const dateInfo = (e.endDate && e.endDate !== e.date) ? `from ${e.date} to ${e.endDate}` : `on ${e.date}`;
-    return `${user?.name} (${user?.icon}) has an event: "${e.title}" ${dateInfo}${detailInfo}.`;
+    return `${user?.name} has an event: "${e.title}" ${dateInfo}${detailInfo}.`;
   }).join("\n");
 
   const prompt = `
     You are the "SquadSync Guru", an AI assistant for a group of friends using the SquadSync app.
-    The users are: ${users.map(u => `${u.name} ${u.icon}`).join(", ")}.
+    The users are: ${users.map(u => u.name).join(", ")}.
     
     Current Schedule:
     ${scheduleContext}
@@ -26,13 +26,13 @@ export const askScheduleAssistant = async (users: User[], events: ScheduleEvent[
     - Answer the question accurately based on the provided schedule.
     - If someone has an event, they are "busy". If they don't have an event on a date, they are "free".
     - Events starting with 👨‍👩‍👧‍👦 are "Group Events" where everyone is attending.
-    - Be concise and friendly. Use the friends' emojis in your response.
+    - Be concise and friendly. Refer to friends by name only.
     - Do NOT use markdown formatting (no **, no *, no bullet points). Just use plain text with line breaks.
     - If details like specific times, train numbers, or locations are provided in the (Notes: ...), use that information to answer specific questions.
     - If you don't know the answer or the date is outside the schedule, say so gracefully in Cantonese.
   `;
 
-  const models = ['gemini-3-flash-preview', 'gemini-2.5-flash'];
+  const models = ['gemini-3-flash-preview'];
 
   for (const model of models) {
     try {
@@ -74,7 +74,7 @@ export const pickEventIcon = async (title: string): Promise<string> => {
     const cleanTitle = title.replace(/^👨‍👩‍👧‍👦\s*/, '');
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: `Pick the single best icon for a group event titled "${cleanTitle}".
 Available icons: ${AVAILABLE_ICONS.join(', ')}
 Reply with ONLY the icon name, nothing else. Just one word.`,
