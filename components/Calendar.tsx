@@ -15,6 +15,27 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Baby, Dog, Cat, Fish, Bug, Sparkles, Zap, Rocket, Crown, Gem, Theater, Clapperboard,
 };
 
+const groupDescriptionByDate = (description: string): { date?: string; lines: string[] }[] => {
+  const groups: { date?: string; lines: string[] }[] = [];
+
+  description.split('\n').filter(line => line.trim()).forEach(line => {
+    const match = line.match(/^(\d{2}-\d{2})\s+(\d{1,2}:\d{2}\s*\|.*)$/);
+    if (match) {
+      const [, date, rest] = match;
+      const lastGroup = groups[groups.length - 1];
+      if (lastGroup && lastGroup.date === date) {
+        lastGroup.lines.push(rest);
+      } else {
+        groups.push({ date, lines: [rest] });
+      }
+    } else {
+      groups.push({ lines: [line] });
+    }
+  });
+
+  return groups;
+};
+
 interface CalendarProps {
   users: User[];
   events: ScheduleEvent[];
@@ -445,8 +466,17 @@ export const Calendar: React.FC<CalendarProps> = ({ users, events, activeUserId,
                   )}
 
                   {event.description && (
-                    <div className="bg-slate-50 rounded-xl p-3 mb-3 max-h-32 overflow-y-auto">
-                      <p className="text-sm text-slate-600 whitespace-pre-line">{event.description}</p>
+                    <div className="bg-slate-50 rounded-xl p-3 mb-3 max-h-32 overflow-y-auto space-y-2">
+                      {groupDescriptionByDate(event.description).map((group, gi) => (
+                        <div key={gi}>
+                          {group.date && (
+                            <p className="text-xs font-bold text-slate-500 mb-0.5">{group.date}</p>
+                          )}
+                          {group.lines.map((line, li) => (
+                            <p key={li} className="text-sm text-slate-600 whitespace-pre-line">{line}</p>
+                          ))}
+                        </div>
+                      ))}
                     </div>
                   )}
 

@@ -42,9 +42,18 @@ export const EventModal: React.FC<EventModalProps> = ({
         const parsedRows: { date: string; time: string; event: string }[] = [];
 
         lines.forEach(line => {
-          const match = line.match(/^(?:(\d{4}-\d{2}-\d{2})\s+)?(\d{1,2}:\d{2})\s*\|\s*(.*)$/);
+          const match = line.match(/^(?:(\d{4}-\d{2}-\d{2})|(\d{2}-\d{2}))?\s*(\d{1,2}:\d{2})\s*\|\s*(.*)$/);
           if (match) {
-            parsedRows.push({ date: match[1] || dateStr, time: match[2], event: match[3] });
+            const [, fullDate, monthDay, time, event] = match;
+            let date = dateStr;
+            if (fullDate) {
+              date = fullDate;
+            } else if (monthDay) {
+              const startYear = dateStr.slice(0, 4);
+              const candidate = `${startYear}-${monthDay}`;
+              date = candidate < dateStr ? `${Number(startYear) + 1}-${monthDay}` : candidate;
+            }
+            parsedRows.push({ date, time, event });
           }
         });
 
@@ -88,7 +97,8 @@ export const EventModal: React.FC<EventModalProps> = ({
       .filter(row => row.time || row.event)
       .map(row => {
         const timePart = row.time || '--:--';
-        return isMultiDay ? `${row.date || startDate} ${timePart} | ${row.event}` : `${timePart} | ${row.event}`;
+        const monthDay = (row.date || startDate).slice(5);
+        return isMultiDay ? `${monthDay} ${timePart} | ${row.event}` : `${timePart} | ${row.event}`;
       })
       .join('\n');
   };
