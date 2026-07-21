@@ -23,8 +23,8 @@ export const EventModal: React.FC<EventModalProps> = ({
   const [title, setTitle] = useState(initialTitle);
   const [startDate, setStartDate] = useState(dateStr);
   const [endDate, setEndDate] = useState(initialEndDate);
-  const [scheduleRows, setScheduleRows] = useState<{ time: string; event: string }[]>([
-    { time: '', event: '' }
+  const [scheduleRows, setScheduleRows] = useState<{ date: string; time: string; event: string }[]>([
+    { date: dateStr, time: '', event: '' }
   ]);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([activeUser.id]);
 
@@ -36,15 +36,15 @@ export const EventModal: React.FC<EventModalProps> = ({
       setEndDate(initialEndDate || '');
       setSelectedUserIds(initialParticipantIds && initialParticipantIds.length > 0 ? initialParticipantIds : [activeUser.id]);
 
-      // Parse existing description for time|event rows
+      // Parse existing description for date|time|event rows
       if (initialDescription) {
         const lines = initialDescription.split('\n').filter(line => line.trim());
-        const parsedRows: { time: string; event: string }[] = [];
+        const parsedRows: { date: string; time: string; event: string }[] = [];
 
         lines.forEach(line => {
-          const match = line.match(/^(\d{1,2}:\d{2})\s*\|\s*(.*)$/);
+          const match = line.match(/^(?:(\d{4}-\d{2}-\d{2})\s+)?(\d{1,2}:\d{2})\s*\|\s*(.*)$/);
           if (match) {
-            parsedRows.push({ time: match[1], event: match[2] });
+            parsedRows.push({ date: match[1] || dateStr, time: match[2], event: match[3] });
           }
         });
 
@@ -52,30 +52,55 @@ export const EventModal: React.FC<EventModalProps> = ({
           setScheduleRows(parsedRows);
         } else {
           // Fallback: put entire description as first event
-          setScheduleRows([{ time: '', event: initialDescription }]);
+          setScheduleRows([{ date: dateStr, time: '', event: initialDescription }]);
         }
       } else {
-        setScheduleRows([{ time: '', event: '' }]);
+        setScheduleRows([{ date: dateStr, time: '', event: '' }]);
       }
     }
-  }, [isOpen, initialTitle, initialDescription, activeUser.id]);
+  }, [isOpen, initialTitle, initialDescription, activeUser.id, dateStr]);
+
+  const isMultiDay = Boolean(endDate && endDate !== startDate);
+
+  const toLocalDateStr = (d: Date): string => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const getDatesInRange = (start: string, end: string): string[] => {
+    const dates: string[] = [];
+    const current = new Date(start + 'T00:00:00');
+    const last = new Date(end + 'T00:00:00');
+    while (current <= last) {
+      dates.push(toLocalDateStr(current));
+      current.setDate(current.getDate() + 1);
+    }
+    return dates;
+  };
+
+  const dateOptions = isMultiDay ? getDatesInRange(startDate, endDate) : [];
 
   // Combine rows into description
   const getFullDescription = () => {
     return scheduleRows
       .filter(row => row.time || row.event)
-      .map(row => `${row.time || '--:--'} | ${row.event}`)
+      .map(row => {
+        const timePart = row.time || '--:--';
+        return isMultiDay ? `${row.date || startDate} ${timePart} | ${row.event}` : `${timePart} | ${row.event}`;
+      })
       .join('\n');
   };
 
-  const updateRow = (index: number, field: 'time' | 'event', value: string) => {
+  const updateRow = (index: number, field: 'date' | 'time' | 'event', value: string) => {
     setScheduleRows(prev => prev.map((row, i) =>
       i === index ? { ...row, [field]: value } : row
     ));
   };
 
   const addRow = () => {
-    setScheduleRows(prev => [...prev, { time: '', event: '' }]);
+    setScheduleRows(prev => [...prev, { date: startDate, time: '', event: '' }]);
   };
 
   const removeRow = (index: number) => {
@@ -151,8 +176,13 @@ export const EventModal: React.FC<EventModalProps> = ({
                 type="date"
                 value={startDate}
                 onChange={(e) => {
-                  setStartDate(e.target.value);
-                  if (endDate && e.target.value > endDate) setEndDate(e.target.value);
+                  const newStart = e.target.value;
+                  const newEnd = endDate && newStart > endDate ? newStart : endDate;
+                  setStartDate(newStart);
+                  if (newEnd !== endDate) setEndDate(newEnd);
+                  setScheduleRows(prev => prev.map(row =>
+                    row.date < newStart ? { ...row, date: newStart } : row.date > newEnd ? { ...row, date: newEnd } : row
+                  ));
                 }}
                 className="flex-1 px-3 md:px-4 py-2.5 md:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-700 text-sm md:text-base"
               />
@@ -161,7 +191,13 @@ export const EventModal: React.FC<EventModalProps> = ({
                 type="date"
                 value={endDate}
                 min={startDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={(e) => {
+                  const newEnd = e.target.value;
+                  setEndDate(newEnd);
+                  setScheduleRows(prev => prev.map(row =>
+                    newEnd && row.date > newEnd ? { ...row, date: newEnd } : row
+                  ));
+                }}
                 placeholder="Same day"
                 className="flex-1 px-3 md:px-4 py-2.5 md:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-700 text-sm md:text-base"
               />
@@ -190,6 +226,7 @@ export const EventModal: React.FC<EventModalProps> = ({
 
             {/* Table Header */}
             <div className="flex gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
+              {isMultiDay && <div className="w-16 md:w-20">Date</div>}
               <div className="w-20 md:w-25">Time</div>
               <div className="flex-1">Event</div>
               <div className="w-6"></div>
@@ -199,6 +236,19 @@ export const EventModal: React.FC<EventModalProps> = ({
             <div className="space-y-2 max-h-[120px] md:max-h-[160px] overflow-y-auto">
               {scheduleRows.map((row, index) => (
                 <div key={index} className="flex gap-1.5 md:gap-2 items-center">
+                  {isMultiDay && (
+                    <select
+                      value={row.date || startDate}
+                      onChange={(e) => updateRow(index, 'date', e.target.value)}
+                      className="w-16 md:w-20 px-1 md:px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-700 text-[10px] md:text-xs"
+                    >
+                      {dateOptions.map(d => (
+                        <option key={d} value={d}>
+                          {new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                   <input
                     type="time"
                     value={row.time}
