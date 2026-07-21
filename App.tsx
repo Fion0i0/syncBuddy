@@ -8,7 +8,7 @@ import { MobileAIButton } from './components/MobileAIButton';
 import { User, ScheduleEvent } from './types';
 import { DEFAULT_USERS, INITIAL_HOLIDAY_EVENTS, VIP_MEMBERS } from './constants';
 import { generateMultiYearBirthdayEvents } from './utils/birthdayUtils';
-import { Coffee } from 'lucide-react';
+import { Coffee, ChevronDown } from 'lucide-react';
 import { pickEventIcon } from './services/geminiService';
 import { isFirebaseAvailable } from './services/firebase';
 import {
@@ -53,6 +53,7 @@ const App: React.FC = () => {
 
   const [activeUserId, setActiveUserId] = useState<string>(DEFAULT_USERS[0].id);
   const [firebaseConnected, setFirebaseConnected] = useState(false);
+  const [isMobileUserSelectorOpen, setIsMobileUserSelectorOpen] = useState(true);
   const seededRef = useRef(false);
 
   // Generate birthday events for VIP members
@@ -287,12 +288,20 @@ const App: React.FC = () => {
               <img src={activeUser?.icon} alt={activeUser?.name} className="w-5 h-5 rounded-full object-cover" />
               <span className="text-xs font-bold text-white">{activeUser?.name}</span>
             </div>
+            <button
+              onClick={() => setIsMobileUserSelectorOpen(prev => !prev)}
+              className="p-1 -mr-1 text-slate-400 hover:text-slate-600"
+            >
+              <ChevronDown className={`w-4 h-4 transition-transform ${isMobileUserSelectorOpen ? 'rotate-180' : ''}`} />
+            </button>
           </div>
         </div>
-        <MobileUserSelector
-          activeUserId={activeUserId}
-          onSelectUser={setActiveUserId}
-        />
+        {isMobileUserSelectorOpen && (
+          <MobileUserSelector
+            activeUserId={activeUserId}
+            onSelectUser={setActiveUserId}
+          />
+        )}
       </div>
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
