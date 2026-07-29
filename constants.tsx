@@ -15,8 +15,8 @@ export const VIP_MEMBERS: User[] = [
   { id: 'u7', name: 'Jake', icon: '/VIP/Jake.png', color: '#2279f2', birthday: '12-06', birthYear: 1991 },
   { id: 'u8', name: 'Vennie', icon: '/VIP/Vennie.png', color: '#9272bb', birthday: '09-23', birthYear: 1993 },
   { id: 'u9', name: 'Rex', icon: '/VIP/Rex.png', color: '#5f5a9c', birthday: '05-30', birthYear: 1994 },
-  { id: 'u10', name: 'Ke', icon: '/VIP/Ke.png', color: '#fcc179' },
-  { id: 'u11', name: 'Step', icon: '/VIP/Step.png', color: '#fc7979' },
+  { id: 'u10', name: 'Ke', icon: '/VIP/Ke.png', color: '#fcc179', birthday: '09-18', birthYear: 1993 },
+  { id: 'u11', name: 'Step', icon: '/VIP/Step.png', color: '#fc7979', birthday: '11-21', birthYear: 1996},
 
 ];
 
